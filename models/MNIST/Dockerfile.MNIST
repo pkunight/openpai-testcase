@@ -14,3 +14,6 @@ ENV TZ=Asia/Shanghai
 
 RUN apt update \
     && DEBIAN_FRONTEND="noninteractive" apt -y install tzdata
+
+RUN python -m pip install tensorboard -i https://pypi.tuna.tsinghua.edu.cn/simple \
+    && python -m pip install tensorboard -i https://pypi.tuna.tsinghua.edu.cn/simple

@@ -9,8 +9,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.distributed as dist
+
 from apex.parallel import DistributedDataParallel as DDP
 from apex import amp
+
+from torch.utils.tensorboard import SummaryWriter
+
 def main():
     print('run main')
     parser = argparse.ArgumentParser()
@@ -24,12 +28,22 @@ def main():
                         help='number of total epochs to run')
     parser.add_argument('--dist-backend',  default='nccl', type=str,
                         help='distributed backend')
+    parser.add_argument('--master-ip',  default='', type=str,
+                        help='master node ip')
+    parser.add_argument('--master-port',  default='', type=str,
+                        help='master node port')
     args = parser.parse_args()
     args.world_size = args.gpus * args.nodes
     print('world_size:',args.world_size)
 
-    os.environ['MASTER_ADDR'] = os.environ['PAI_HOST_IP_worker_0']
-    os.environ['MASTER_PORT'] = os.environ['PAI_worker_0_SynPort_PORT']
+    if len(args.master_ip) > 0:
+        os.environ['MASTER_ADDR'] = args.master_ip
+    else:
+        os.environ['MASTER_ADDR'] = os.environ['PAI_HOST_IP_worker_0']
+    if len(args.master_port) > 0:
+        os.environ['MASTER_PORT'] = args.master_port
+    else:
+        os.environ['MASTER_PORT'] = os.environ['PAI_worker_0_SynPort_PORT']
 
     print('master:', os.environ['MASTER_ADDR'], 'port:', os.environ['MASTER_PORT'])
     # Data loading code
@@ -64,6 +78,7 @@ class ConvNet(nn.Module):
 
 def train(gpu, args, trainset):
     print("start train")
+    tb_writer = SummaryWriter('/mnt/tensorboard')
     rank = int(os.environ['PAI_TASK_INDEX']) * args.gpus + gpu
     dist.init_process_group(backend=args.dist_backend, init_method='env://', world_size=args.world_size, rank=rank)
     torch.manual_seed(0)
@@ -100,6 +115,8 @@ def train(gpu, args, trainset):
             # Forward pass
             outputs = model(images)
             loss = criterion(outputs, labels)
+            if (i + 1) % 10 == 0:
+                tb_writer.add_scalar("Train Loss", loss, epoch)
 
             # Backward and optimize
             optimizer.zero_grad()
@@ -108,6 +125,7 @@ def train(gpu, args, trainset):
             #if (i + 1) % 100 == 0 and gpu == 0:
             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'.format(epoch + 1, args.epochs, i + 1, total_step,
                                                                          loss.item()))
+    tb_writer.close()
     if gpu == 0:
         print("Training complete in: " + str(datetime.now() - start))
 
