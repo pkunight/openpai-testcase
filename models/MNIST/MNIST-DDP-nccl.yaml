@@ -26,8 +26,7 @@ taskRoles:
       - git clone https://github.com/pkunight/openpai-testcase.git
       - cd openpai-testcase/models/MNIST
       - >-
-        export NCCL_SOCKET_IFNAME=eth0 
-        && python MNIST-DDP-nccl.py -n 2 -g 2 --epochs 10
+        export NCCL_SOCKET_IFNAME=eth0 && python MNIST-DDP-nccl.py -n 2 -g 2 --epochs 10
 defaults:
   virtualCluster: default
 extras:
