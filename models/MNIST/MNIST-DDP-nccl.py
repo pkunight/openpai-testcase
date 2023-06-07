@@ -27,8 +27,10 @@ def main():
     args = parser.parse_args()
     args.world_size = args.gpus * args.nodes
     print('world_size:',args.world_size)
+
     os.environ['MASTER_ADDR'] = os.environ['PAI_HOST_IP_worker_0']
     os.environ['MASTER_PORT'] = os.environ['PAI_worker_0_SynPort_PORT']
+
     print('master:', os.environ['MASTER_ADDR'], 'port:', os.environ['MASTER_PORT'])
     # Data loading code
     trainset = torchvision.datasets.MNIST(root='./data',
