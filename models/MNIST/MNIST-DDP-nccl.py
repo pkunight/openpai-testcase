@@ -32,9 +32,14 @@ def main():
                         help='master node ip')
     parser.add_argument('--master-port',  default='', type=str,
                         help='master node port')
+    parser.add_argument('--nccl-debug',  default='', type=str,
+                        help='nccl log level: WARN, INFO, TRACE, VERSION')
     args = parser.parse_args()
     args.world_size = args.gpus * args.nodes
     print('world_size:',args.world_size)
+
+    if len(args.nccl_debug) > 0:
+        os.environ['NCCL_DEBUG'] = args.nccl_debug
 
     if len(args.master_ip) > 0:
         os.environ['MASTER_ADDR'] = args.master_ip
