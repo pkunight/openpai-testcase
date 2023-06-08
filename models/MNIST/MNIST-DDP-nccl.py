@@ -36,7 +36,6 @@ def main():
                         help='nccl log level: WARN, INFO, TRACE, VERSION')
     args = parser.parse_args()
     args.world_size = args.gpus * args.nodes
-    print('world_size:',args.world_size)
 
     if len(args.nccl_debug) > 0:
         os.environ['NCCL_DEBUG'] = args.nccl_debug
@@ -52,10 +51,13 @@ def main():
 
     print('master:', os.environ['MASTER_ADDR'], 'port:', os.environ['MASTER_PORT'])
     # Data loading code
+
+    print ("Data download start...")
     trainset = torchvision.datasets.MNIST(root='./data',
                                           train=True,
                                           transform=transforms.ToTensor(),
                                           download=True)
+    print ("Data download finish")
     mp.spawn(train, nprocs=args.gpus, args=(args, trainset))
 
 
@@ -82,9 +84,10 @@ class ConvNet(nn.Module):
         return out
 
 def train(gpu, args, trainset):
-    print("start train")
+    pai_task_index = int(os.environ['PAI_TASK_INDEX'])
+    print("start train task[%d]" % (pai_task_index))
     tb_writer = SummaryWriter('/mnt/tensorboard')
-    rank = int(os.environ['PAI_TASK_INDEX']) * args.gpus + gpu
+    rank = pai_task_index * args.gpus + gpu
     dist.init_process_group(backend=args.dist_backend, init_method='env://', world_size=args.world_size, rank=rank)
     torch.manual_seed(0)
     model=ConvNet()
