@@ -85,7 +85,7 @@ class ConvNet(nn.Module):
 
 def train(gpu, args, trainset):
     pai_task_index = int(os.environ['PAI_TASK_INDEX'])
-    print("start train task[%d]" % (pai_task_index))
+    print("start train task[%d] gpu[%d]" % (pai_task_index, gpu))
     tb_writer = SummaryWriter('/mnt/tensorboard')
     rank = pai_task_index * args.gpus + gpu
     dist.init_process_group(backend=args.dist_backend, init_method='env://', world_size=args.world_size, rank=rank)
